@@ -13,3 +13,6 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Duplicate nested copy (root backened/frontend are canonical)
+AIOPs/
