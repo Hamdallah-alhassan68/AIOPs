@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../services/api";
+import api, { BASE_URL } from "../services/api";
 
 const severityClass = (severity) =>
   String(severity || "").toLowerCase().replace(/\s+/g, "-");
@@ -89,6 +89,10 @@ function SlaPage() {
     window.print();
   };
 
+  const downloadHtmlReport = () => {
+    window.open(`${BASE_URL}/report/pilot?download=1`, "_blank");
+  };
+
   if (error) {
     return <div className="error-message">{error}</div>;
   }
@@ -112,6 +116,9 @@ function SlaPage() {
           </button>
           <button className="secondary-btn" onClick={exportJson}>
             ⬇ Export JSON
+          </button>
+          <button className="secondary-btn" onClick={downloadHtmlReport}>
+            ⬇ Download Report
           </button>
           <button className="primary-btn" onClick={printReport}>
             🖨 Print Report

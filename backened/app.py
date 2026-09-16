@@ -9,6 +9,7 @@ from routes.incidents import router as incidents_router
 from routes.dashboard import (
     router as dashboard_router
 )
+from routes.report import router as report_router
 
 
 @asynccontextmanager
@@ -57,6 +58,8 @@ def health():
 app.include_router(
     dashboard_router
 )
+
+app.include_router(report_router)
 
 
 app.add_middleware(

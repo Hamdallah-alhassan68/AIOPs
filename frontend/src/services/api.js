@@ -47,4 +47,5 @@ const api = {
   patch: (url, body) => request("PATCH", url, body),
 };
 
+export { BASE_URL };
 export default api;
