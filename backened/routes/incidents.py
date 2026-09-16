@@ -1,11 +1,18 @@
-from fastapi import APIRouter, HTTPException
+import json
 import sqlite3
 import os
 
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
 from services.correlation_service import CorrelationService
 from services.incident_query_service import IncidentQueryService
+from services.incident_service import IncidentService
 
 query_service = IncidentQueryService()
+
+incident_service = IncidentService()
+
 router = APIRouter(
     prefix="/incidents",
     tags=["Incidents"]
@@ -23,30 +30,24 @@ DB_PATH = os.path.join(
 )
 
 
+# ==========================================
+# LIST INCIDENTS (with filters)
+# ==========================================
+
 @router.get("/")
-def get_incidents(limit: int = 100):
+def get_incidents(
+    limit: int = Query(100, ge=1, le=500),
+    severity: str | None = None,
+    status: str | None = None
+):
 
     try:
 
-        conn = sqlite3.connect(DB_PATH)
-
-        conn.row_factory = sqlite3.Row
-
-        cursor = conn.cursor()
-
-        cursor.execute("""
-        SELECT *
-        FROM incidents
-        ORDER BY created_at DESC
-        LIMIT ?
-        """, (limit,))
-
-        incidents = [
-            dict(row)
-            for row in cursor.fetchall()
-        ]
-
-        conn.close()
+        incidents = query_service.get_recent_incidents(
+            limit=limit,
+            severity=severity,
+            status=status
+        )
 
         return {
             "count": len(incidents),
@@ -59,47 +60,131 @@ def get_incidents(limit: int = 100):
             status_code=500,
             detail=str(e)
         )
+
+
+# ==========================================
+# SINGLE INCIDENT
+# ==========================================
+
+@router.get("/{incident_id}")
+def get_incident(incident_id: int):
+
+    incident = incident_service.get_incident(
+        incident_id
+    )
+
+    if not incident:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Incident not found"
+        )
+
+    return incident
+
+
+# ==========================================
+# UPDATE INCIDENT STATUS (lifecycle)
+# ==========================================
+
+class IncidentUpdate(BaseModel):
+
+    status: str
+
+
+@router.patch("/{incident_id}")
+def update_incident(
+    incident_id: int,
+    update: IncidentUpdate
+):
+
+    try:
+
+        updated = incident_service.update_status(
+            incident_id,
+            update.status
+        )
+
+    except ValueError as e:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+
+    if not updated:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Incident not found"
+        )
+
+    return {
+        "updated": True,
+        "incident": updated
+    }
+
+
+# ==========================================
+# SUMMARY
+# ==========================================
+
 @router.get("/summary")
 def incident_summary():
 
-    conn = sqlite3.connect(DB_PATH)
+    incidents = query_service.get_recent_incidents(
+        limit=500
+    )
 
-    conn.row_factory = sqlite3.Row
+    severity_counts = {}
 
-    cursor = conn.cursor()
+    status_counts = {}
 
-    cursor.execute("""
-        SELECT COUNT(*) as total
-        FROM incidents
-    """)
+    for incident in incidents:
 
-    total = cursor.fetchone()["total"]
+        severity_counts[incident["severity"]] = (
+            severity_counts.get(
+                incident["severity"], 0
+            ) + 1
+        )
 
-    cursor.execute("""
-        SELECT *
-        FROM incidents
-        ORDER BY created_at DESC
-        LIMIT 1
-    """)
+        status_counts[incident["status"]] = (
+            status_counts.get(
+                incident["status"], 0
+            ) + 1
+        )
 
-    latest = cursor.fetchone()
-
-    conn.close()
+    latest = (
+        incidents[0]
+        if incidents
+        else None
+    )
 
     return {
-        "total_incidents": total,
-        "latest_incident":
-            dict(latest) if latest else None
+        "total_incidents": len(incidents),
+        "severity_distribution": severity_counts,
+        "status_distribution": status_counts,
+        "latest_incident": latest
     }
+
+
+# ==========================================
+# CORRELATION GROUPS
+# ==========================================
+
 @router.get("/correlations")
 def get_correlations():
 
-    incidents = query_service.get_recent_incidents()
+    incidents = (
+        query_service
+        .get_recent_incidents(limit=500)
+    )
 
     events = CorrelationService.correlate(
         incidents
     )
 
     return {
-        "events": events
+        "events": events,
+        "event_count": len(events)
     }

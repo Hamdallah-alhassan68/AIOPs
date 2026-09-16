@@ -1,15 +1,30 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from database.incident_db import migrate_database
 from routes.monitoring import router as monitoring_router
 from routes.incidents import router as incidents_router
 from routes.dashboard import (
     router as dashboard_router
 )
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    # Ensure incident schema is available / migrated
+    migrate_database()
+
+    yield
+
+
 app = FastAPI(
     title="AIOps Network Monitoring Platform",
     description="AI-powered network monitoring and risk management platform",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 
@@ -46,7 +61,10 @@ app.include_router(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    # Local dev console: allow any origin (Starlette echoes the
+    # caller origin back when credentials are enabled, so whichever
+    # port Vite happens to pick keeps working).
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

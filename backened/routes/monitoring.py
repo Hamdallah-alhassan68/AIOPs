@@ -98,7 +98,6 @@ def process_flow(flow: NetworkFlow):
             ttl=flow.ttl
         )
 
-
         # ----------------------------------
         # 2. Convert flow into ML features
         # ----------------------------------
@@ -136,15 +135,15 @@ def process_flow(flow: NetworkFlow):
             "avg_ttl": flow.ttl
         }
 
-
         # ----------------------------------
-        # 3. Run AIOps engine
+        # 3. Run full AIOps engine
         # ----------------------------------
 
         result = incident_engine.process(
-            network_data
+            network_data,
+            source_ip=flow.source_ip,
+            destination_ip=flow.destination_ip
         )
-
 
         # ----------------------------------
         # 4. Return result
@@ -160,15 +159,91 @@ def process_flow(flow: NetworkFlow):
 
         }
 
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+# ==========================================
+# BURST SIMULATOR
+# Inject a synthetic traffic burst and let
+# the AIOps engine evaluate the aggregate.
+# ==========================================
+
+class BurstRequest(BaseModel):
+
+    flows: list[NetworkFlow]
+
+
+@router.post("/simulate")
+def simulate_burst(burst: BurstRequest):
+
+    if not burst.flows:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Provide at least one flow"
+        )
+
+    try:
+
+        # Store every flow in the burst
+        for flow in burst.flows:
+
+            insert_flow(
+                source_ip=flow.source_ip,
+                destination_ip=flow.destination_ip,
+                source_port=flow.source_port,
+                destination_port=flow.destination_port,
+                protocol=flow.protocol,
+                packets=flow.packets,
+                bytes=flow.bytes,
+                duration=flow.duration,
+                ttl=flow.ttl
+            )
+
+        # Aggregate the burst into window-level features
+        flow_dicts = [
+            flow.model_dump()
+            for flow in burst.flows
+        ]
+
+        features = FeatureService.create_features(
+            flow_dicts
+        )
+
+        if not features:
+
+            raise HTTPException(
+                status_code=400,
+                detail="Could not build features"
+            )
+
+        # Run the full AIOps pipeline on the window
+        result = incident_engine.process(
+            features,
+            source_ip=burst.flows[0].source_ip,
+            destination_ip=burst.flows[0].destination_ip
+        )
+
+        return {
+            "flows_processed": len(burst.flows),
+            "features": features,
+            "aiops": result
+        }
+
+    except HTTPException:
+
+        raise
 
     except Exception as e:
 
         raise HTTPException(
-
             status_code=500,
-
             detail=str(e)
-
         )
 
 
@@ -196,9 +271,6 @@ def network_summary():
     except Exception as e:
 
         raise HTTPException(
-
             status_code=500,
-
             detail=str(e)
-
         )

@@ -15,10 +15,28 @@ DATABASE_PATH = os.path.join(
 )
 
 
-def initialize_database():
+# Columns introduced after the initial schema. They are added
+# lazily by `migrate_database` so existing databases keep working.
+_ADDITIONAL_COLUMNS = {
+    "source_ip": "TEXT",
+    "destination_ip": "TEXT",
+    "root_cause": "TEXT",
+    "recommendations": "TEXT",
+    "reroute_plan": "TEXT",
+    "acknowledged": "INTEGER DEFAULT 0",
+    "resolved_at": "TIMESTAMP",
+}
 
+
+def _get_connection():
     conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
+
+def migrate_database():
+
+    conn = _get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -32,7 +50,25 @@ def initialize_database():
     )
     """)
 
+    existing = {
+        row["name"]
+        for row in cursor.execute(
+            "PRAGMA table_info(incidents)"
+        )
+    }
+
+    for column, definition in _ADDITIONAL_COLUMNS.items():
+
+        if column not in existing:
+
+            cursor.execute(
+                f"ALTER TABLE incidents "
+                f"ADD COLUMN {column} {definition}"
+            )
+
     conn.commit()
     conn.close()
 
-    print("Incident database initialized successfully")
+    print(
+        "Incident database initialized successfully"
+    )

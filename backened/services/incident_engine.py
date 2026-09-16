@@ -1,46 +1,44 @@
-from services.anomaly_service import AnomalyService
-from services.risk_service import RiskService
-from services.incident_service import IncidentService
+from services.incident_query_service import (
+    IncidentQueryService
+)
 
 
 class IncidentEngine:
 
+    """Orchestrates the full AIOps pipeline for one telemetry window:
+
+    anomaly detection -> risk classification -> root cause analysis
+    -> recommended actions -> reroute simulation -> incident creation
+    """
+
     def __init__(self):
 
-        self.anomaly_service = AnomalyService()
-        self.incident_service = IncidentService()
+        self.query_service = IncidentQueryService()
 
-    def process(self, network_data):
+    def process(
+        self,
+        network_data,
+        source_ip=None,
+        destination_ip=None
+    ):
 
-        # 1. Run anomaly detection
-        anomaly_result = self.anomaly_service.predict(
-            network_data
+        result = self.query_service.run_full_analysis(
+            network_data,
+            source_ip=source_ip,
+            destination_ip=destination_ip
         )
 
-        anomaly_score = anomaly_result["score"]
-        prediction = anomaly_result["prediction"]
-
-        # 2. Classify risk
-        severity, risk_score = RiskService.classify(
-            anomaly_score
-        )
-
-        # 3. Create incident if anomaly detected
-        incident_id = None
-
-        if prediction == -1:
-
-            incident_id = self.incident_service.create_incident(
-                severity,
-                risk_score,
-                anomaly_score
-            )
-
-        # 4. Return complete result
         return {
-            "prediction": prediction,
-            "anomaly_score": anomaly_score,
-            "severity": severity,
-            "risk_score": risk_score,
-            "incident_id": incident_id
+            "prediction": result["prediction"],
+            "anomaly_score": result["anomaly_score"],
+            "severity": result["severity"],
+            "risk_score": result["risk_score"],
+            "root_cause": result["root_cause"],
+            "recommendations": result["recommendations"],
+            "reroute_plan": result["reroute_plan"],
+            "incident_id": (
+                result["incident"]["incident_id"]
+                if result["incident"]
+                else None
+            )
         }
