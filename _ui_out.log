@@ -3,12 +3,8 @@
 > vite --port 5173 --strictPort
 
 
-  [32m[1mVITE[22m v8.2.2[39m  [2mready in [0m[1m707[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v8.2.2[39m  [2mready in [0m[1m877[22m[2m[0m ms[22m
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
 [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
 [2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
-[2m12:33:55[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/NetworkDashboard.jsx, /src/pages/SlaPage.jsx, /src/pages/IncidentsPage.jsx, /src/pages/ReroutePage.jsx, /src/pages/RiskDashboard.jsx[22m
-[2m12:34:20[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/SlaPage.jsx[22m
-[2m12:35:19[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/SlaPage.jsx[22m
-[2m12:35:28[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/SlaPage.jsx[22m

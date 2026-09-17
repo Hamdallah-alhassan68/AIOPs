@@ -82,8 +82,8 @@ def main():
     parser.add_argument("--burst-every", type=int, default=15, help="flows per burst cycle")
     args = parser.parse_args()
 
-    print(f"Streaming telemetry to http://127.0.0.1:{args.port} ...")
-    print("Press Ctrl+C to stop.\n")
+    print(f"Streaming telemetry to http://127.0.0.1:{args.port} ...", flush=True)
+    print("Press Ctrl+C to stop.\n", flush=True)
 
     throughput = 0
     since_burst = 0
@@ -106,17 +106,19 @@ def main():
                     f"{flow['source_ip']} -> {flow['destination_ip']}:"
                     f"{flow['destination_port']}  {flow['protocol']} "
                     f"{flow['packets']}p/{flow['bytes']}B  "
-                    f"anomaly={aiops['anomaly_score']:.3f}"
+                    f"anomaly={aiops['anomaly_score']:.3f}",
+                    flush=True,
                 )
                 throughput += 1
                 since_burst = 0 if burst_now else since_burst + 1
             except Exception as exc:
                 print(f"{time.strftime('%H:%M:%S')}  ERROR {exc}  "
-                      f"(is the API running on :{args.port}?)", file=sys.stderr)
+                      f"(is the API running on :{args.port}?)",
+                      file=sys.stderr, flush=True)
 
             time.sleep(args.interval)
     except KeyboardInterrupt:
-        print(f"\nStopped. {throughput} flows streamed.")
+        print(f"\nStopped. {throughput} flows streamed.", flush=True)
 
 
 if __name__ == "__main__":

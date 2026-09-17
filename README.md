@@ -81,6 +81,32 @@ python scripts/seed_telemetry.py
 The seeder inserts ~120 normal flows plus burst windows (traffic spike, port
 scan, abnormal transfer) and pushes each window through the full AIOps
 pipeline, creating realistic incidents for the dashboards.
+### 1b. Live traffic (optional - makes the dashboards animate)
+
+With the API running, stream realistic flows continuously:
+
+```bash
+cd backened
+python scripts/stream_telemetry.py                  # every 3 s, normal + bursts
+python scripts/stream_telemetry.py --interval 1 --burst-every 10
+```
+
+Watch the Network Monitoring chart, live flow table and flagged activity
+update in real time.
+
+### 1b. Live traffic (optional - makes the dashboards animate)
+
+With the API running, stream realistic flows continuously:
+
+```bash
+cd backened
+python scripts/stream_telemetry.py                  # every 3 s, normal + bursts
+python scripts/stream_telemetry.py --interval 1 --burst-every 10
+```
+
+Watch the Network Monitoring chart, live flow table and flagged activity
+update in real time.
+
 
 ### 2. Start the API
 
