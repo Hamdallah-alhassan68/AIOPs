@@ -18,3 +18,6 @@ Thumbs.db
 AIOPs/
 
 *.log
+
+# Local SQLite data (regenerate with scripts/seed_telemetry.py)
+*.db
